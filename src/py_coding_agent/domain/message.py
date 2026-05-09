@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeAlias
 
 from py_coding_agent.domain.message_id import MessageId
 
@@ -49,3 +49,6 @@ class ToolResultMessage:
     is_error: bool = False
     id: MessageId = field(default_factory=MessageId)
     role: str = field(init=False, default="tool")
+
+
+Message: TypeAlias = UserMessage | AssistantMessage | ToolResultMessage
