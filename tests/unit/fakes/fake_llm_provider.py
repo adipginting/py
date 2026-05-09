@@ -14,10 +14,20 @@ class FakeLLMProvider:
 
     Yields the events given to it. Records each stream invocation
     so tests can verify call parameters.
+
+    Supports two modes:
+    - Single-call: pass `events`. All calls yield the same events.
+    - Multi-call: pass `events_per_call`. Each call gets its own list.
     """
 
-    def __init__(self, events: list[StreamEvent] | None = None) -> None:
+    def __init__(
+        self,
+        events: list[StreamEvent] | None = None,
+        events_per_call: list[list[StreamEvent]] | None = None,
+    ) -> None:
         self.events = events or []
+        self.events_per_call = events_per_call or []
+        self._call_index = 0
         self.invocations: list[StreamInvocation] = []
 
     async def stream(
@@ -37,5 +47,11 @@ class FakeLLMProvider:
                 system_prompt=system_prompt,
             )
         )
-        for event in self.events:
-            yield event
+        if self.events_per_call:
+            if self._call_index < len(self.events_per_call):
+                for event in self.events_per_call[self._call_index]:
+                    yield event
+            self._call_index += 1
+        else:
+            for event in self.events:
+                yield event

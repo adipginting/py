@@ -51,8 +51,9 @@ class PromptUseCase:
         """
         events: list[DomainEvent] = []
 
-        # Step 1: append user message
-        events.extend(state.append_user_message(UserMessage(text=text)))
+        # Step 1: append user message (skip for empty text, e.g. re-prompts after tool results)
+        if text:
+            events.extend(state.append_user_message(UserMessage(text=text)))
 
         # Step 2: stream from LLM
         text_parts: list[str] = []
