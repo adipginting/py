@@ -18,6 +18,11 @@ def app() -> None:
     """py-coding-agent: A Python coding agent."""
 
 
+def main() -> None:
+    """Entry point for the CLI."""
+    app()
+
+
 @app.command("print")
 @click.argument("prompt")
 def print_command(prompt: str) -> None:
