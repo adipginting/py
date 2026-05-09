@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, field
 
+from py_coding_agent.domain.events import DomainEvent, MessageAppended, ToolResultAppended
 from py_coding_agent.domain.message import (
     AssistantMessage,
     Message,
@@ -22,17 +23,25 @@ class AgentState:
 
     messages: list[Message] = field(default_factory=list)
     pending_tool_call_ids: set[ToolCallId] = field(default_factory=set)
+    _events: list[DomainEvent] = field(default_factory=list, repr=False)
 
-    def append_user_message(self, message: UserMessage) -> None:
+    def _record(self, event: DomainEvent) -> None:
+        self._events.append(event)
+
+    def append_user_message(self, message: UserMessage) -> list[DomainEvent]:
         """Append a user message to the conversation."""
         self.messages.append(message)
+        self._record(MessageAppended(message))
+        return self.collect_events()
 
-    def append_assistant_message(self, message: AssistantMessage) -> None:
+    def append_assistant_message(self, message: AssistantMessage) -> list[DomainEvent]:
         """Append an assistant message and track pending tool calls."""
         self.messages.append(message)
         self.pending_tool_call_ids.update(tc.id for tc in message.tool_calls)
+        self._record(MessageAppended(message))
+        return self.collect_events()
 
-    def append_tool_result(self, message: ToolResultMessage) -> None:
+    def append_tool_result(self, message: ToolResultMessage) -> list[DomainEvent]:
         """Append a tool result, verifying it answers a pending tool call."""
         if message.tool_call_id not in self.pending_tool_call_ids:
             raise ValueError(
@@ -40,3 +49,12 @@ class AgentState:
             )
         self.messages.append(message)
         self.pending_tool_call_ids.discard(message.tool_call_id)
+        self._record(ToolResultAppended(message))
+        return self.collect_events()
+
+    def collect_events(self) -> list[DomainEvent]:
+        """Return and drain all uncollected events."""
+        events = self._events[:]
+        self._events.clear()
+        return events
+
