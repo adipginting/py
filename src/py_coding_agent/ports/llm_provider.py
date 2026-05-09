@@ -72,7 +72,7 @@ class LLMProvider(Protocol):
     normalizing them into a uniform stream of domain events.
     """
 
-    async def stream(
+    def stream(
         self,
         *,
         model: str,
