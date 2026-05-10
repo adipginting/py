@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  pi-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspace:cached
+      - pi-node-modules:/workspace/node_modules
+      - pi-dist:/workspace/packages/*/dist
+    environment:
+      - NODE_ENV=development
+      - HUSKY=0
+      - NPM_CONFIG_CACHE=/workspace/.npm-cache
+    ports:
+      - "3000:3000"  # pi web-ui
+      - "8080:8080"  # pi development server
+    working_dir: /workspace
+    user: node
+    command: sleep infinity
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  pi-node-modules:
+  pi-dist:
