@@ -36,3 +36,11 @@ class TokenUsageRecorded(DomainEvent):
     """Token usage was recorded for a turn."""
 
     usage: TokenUsage
+
+
+@dataclass(frozen=True)
+class ContextOverflowed(DomainEvent):
+    """The conversation token count has exceeded the model's context limit."""
+
+    total_tokens: int
+    limit: int

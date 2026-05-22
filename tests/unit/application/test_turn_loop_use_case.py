@@ -12,6 +12,7 @@ from py_coding_agent.ports.llm_provider import (
     StopEvent,
     TextChunk,
     ToolCallChunk,
+    UsageEvent,
 )
 from py_coding_agent.ports.tool_executor import ToolExecutionResult
 from tests.unit.fakes.fake_llm_provider import FakeLLMProvider
@@ -98,7 +99,9 @@ async def test_turn_executes_multiple_tools_in_one_call() -> None:
 
     assert len(executor.invocations) == 2
     assert len(state.messages) == 5
-    assert state.messages[3].content == "content"
+    msg = state.messages[3]
+    assert isinstance(msg, ToolResultMessage)
+    assert msg.content == "content"
 
 
 @pytest.mark.anyio
@@ -114,3 +117,73 @@ async def test_turn_forwards_tools_to_provider() -> None:
 
     assert len(llm.invocations) == 1
     assert llm.invocations[0].tools == [tool_def]
+
+
+@pytest.mark.anyio
+async def test_turn_emits_context_overflow_when_limit_exceeded() -> None:
+    """When accumulated tokens exceed context_limit, a ContextOverflowed event is emitted."""
+    llm = FakeLLMProvider(
+        events=[
+            TextChunk(text="Hi"),
+            UsageEvent(input_tokens=100, output_tokens=50),
+            StopEvent(reason="stop"),
+        ]
+    )
+    executor = FakeToolExecutor()
+    use_case = TurnLoopUseCase(llm_provider=llm, tool_executor=executor)
+    state = AgentState()
+
+    result = await use_case.execute(state=state, text="Hello", context_limit=120)
+
+    event_types = [type(e).__name__ for e in result.events]
+    assert "ContextOverflowed" in event_types
+
+
+@pytest.mark.anyio
+async def test_turn_does_not_emit_overflow_when_under_limit() -> None:
+    """When accumulated tokens stay below context_limit, no overflow event is emitted."""
+    llm = FakeLLMProvider(
+        events=[
+            TextChunk(text="Hi"),
+            UsageEvent(input_tokens=10, output_tokens=5),
+            StopEvent(reason="stop"),
+        ]
+    )
+    executor = FakeToolExecutor()
+    use_case = TurnLoopUseCase(llm_provider=llm, tool_executor=executor)
+    state = AgentState()
+
+    result = await use_case.execute(state=state, text="Hello", context_limit=100)
+
+    event_types = [type(e).__name__ for e in result.events]
+    assert "ContextOverflowed" not in event_types
+
+
+@pytest.mark.anyio
+async def test_turn_checks_overflow_after_each_prompt_in_loop() -> None:
+    """Overflow is checked after every prompt, including re-prompts after tool calls."""
+    tool_call_id = ToolCallId.from_string("550e8400-e29b-41d4-a716-446655440000")
+    tool_call = ToolCall(id=tool_call_id, name="read", arguments={"path": "x"})
+
+    llm = FakeLLMProvider(
+        events_per_call=[
+            [
+                ToolCallChunk(tool_call=tool_call),
+                UsageEvent(input_tokens=10, output_tokens=5),
+                StopEvent(reason="tool_calls"),
+            ],
+            [
+                TextChunk(text="Done"),
+                UsageEvent(input_tokens=50, output_tokens=20),
+                StopEvent(reason="stop"),
+            ],
+        ]
+    )
+    executor = FakeToolExecutor(results={"read": ToolExecutionResult(content="data")})
+    use_case = TurnLoopUseCase(llm_provider=llm, tool_executor=executor)
+    state = AgentState()
+
+    result = await use_case.execute(state=state, text="Read x", context_limit=70)
+
+    event_types = [type(e).__name__ for e in result.events]
+    assert "ContextOverflowed" in event_types

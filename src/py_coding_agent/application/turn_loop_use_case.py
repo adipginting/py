@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from py_coding_agent.application.execute_tool_use_case import ExecuteToolUseCase
 from py_coding_agent.application.prompt_use_case import PromptUseCase
 from py_coding_agent.domain.agent_state import AgentState
-from py_coding_agent.domain.events import DomainEvent
+from py_coding_agent.domain.events import ContextOverflowed, DomainEvent
 from py_coding_agent.domain.message import AssistantMessage
 from py_coding_agent.domain.tool_definition import ToolDefinition
 from py_coding_agent.ports.llm_provider import LLMProvider
@@ -47,6 +47,7 @@ class TurnLoopUseCase:
         model: str = "openai/gpt-4o",
         tools: list[ToolDefinition] | None = None,
         system_prompt: str = "",
+        context_limit: int = 0,
     ) -> TurnResult:
         """Execute a full turn.
 
@@ -66,6 +67,7 @@ class TurnLoopUseCase:
         )
         assistant_messages.append(result.assistant_message)
         events.extend(result.events)
+        self._check_overflow(state, context_limit, events)
 
         # Tool execution loop
         while result.assistant_message.tool_calls:
@@ -86,8 +88,24 @@ class TurnLoopUseCase:
             )
             assistant_messages.append(result.assistant_message)
             events.extend(result.events)
+            self._check_overflow(state, context_limit, events)
 
         return TurnResult(
             assistant_messages=assistant_messages,
             events=events,
         )
+
+    def _check_overflow(
+        self,
+        state: AgentState,
+        context_limit: int,
+        events: list[DomainEvent],
+    ) -> None:
+        """Emit ContextOverflowed if token usage exceeds the limit."""
+        if context_limit > 0 and state.token_usage.total_tokens >= context_limit:
+            events.append(
+                ContextOverflowed(
+                    total_tokens=state.token_usage.total_tokens,
+                    limit=context_limit,
+                )
+            )
