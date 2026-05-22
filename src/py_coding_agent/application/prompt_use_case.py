@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from py_coding_agent.domain.agent_state import AgentState
 from py_coding_agent.domain.events import DomainEvent
 from py_coding_agent.domain.message import AssistantMessage, UserMessage
+from py_coding_agent.domain.token_usage import TokenUsage
 from py_coding_agent.domain.tool_call import ToolCall
 from py_coding_agent.domain.tool_definition import ToolDefinition
 
@@ -58,13 +59,14 @@ class PromptUseCase:
         # Step 2: stream from LLM
         text_parts: list[str] = []
         tool_calls: list[ToolCall] = []
+        usage = TokenUsage()
         async for event in self._llm.stream(
             model=model,
             messages=state.messages,
             tools=tools or [],
             system_prompt=system_prompt,
         ):
-            self._handle_stream_event(event, text_parts, tool_calls)
+            usage = self._handle_stream_event(event, text_parts, tool_calls, usage)
 
         # Step 3: build assistant message
         assistant = AssistantMessage(
@@ -75,6 +77,10 @@ class PromptUseCase:
         # Step 4: append assistant message
         events.extend(state.append_assistant_message(assistant))
 
+        # Step 5: record token usage if any was reported
+        if usage.total_tokens > 0:
+            events.extend(state.add_token_usage(usage))
+
         return PromptResult(assistant_message=assistant, events=events)
 
     def _handle_stream_event(
@@ -82,10 +88,17 @@ class PromptUseCase:
         event: StreamEvent,
         text_parts: list[str],
         tool_calls: list[ToolCall],
-    ) -> None:
-        from py_coding_agent.ports.llm_provider import TextChunk, ToolCallChunk
+        usage: TokenUsage,
+    ) -> TokenUsage:
+        from py_coding_agent.ports.llm_provider import TextChunk, ToolCallChunk, UsageEvent
 
         if isinstance(event, TextChunk):
             text_parts.append(event.text)
         elif isinstance(event, ToolCallChunk):
             tool_calls.append(event.tool_call)
+        elif isinstance(event, UsageEvent):
+            usage = usage + TokenUsage(
+                input_tokens=event.input_tokens,
+                output_tokens=event.output_tokens,
+            )
+        return usage

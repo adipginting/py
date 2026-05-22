@@ -22,9 +22,7 @@ async def test_execute_tool_appends_result() -> None:
     state.append_assistant_message(
         AssistantMessage(
             text="",
-            tool_calls=(
-                ToolCall(id=tool_call_id, name="read", arguments={"path": "/etc/hosts"}),
-            ),
+            tool_calls=(ToolCall(id=tool_call_id, name="read", arguments={"path": "/etc/hosts"}),),
         )
     )
 
@@ -46,9 +44,7 @@ async def test_execute_tool_returns_events() -> None:
     state.append_assistant_message(
         AssistantMessage(
             text="",
-            tool_calls=(
-                ToolCall(id=tool_call_id, name="read", arguments={}),
-            ),
+            tool_calls=(ToolCall(id=tool_call_id, name="read", arguments={}),),
         )
     )
 
@@ -69,9 +65,7 @@ async def test_execute_tool_with_error() -> None:
     state.append_assistant_message(
         AssistantMessage(
             text="",
-            tool_calls=(
-                ToolCall(id=tool_call_id, name="read", arguments={}),
-            ),
+            tool_calls=(ToolCall(id=tool_call_id, name="read", arguments={}),),
         )
     )
 

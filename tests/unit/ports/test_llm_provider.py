@@ -65,7 +65,14 @@ async def test_fake_llm_provider_records_invocations() -> None:
     """FakeLLMProvider records each stream call for later inspection."""
     fake = FakeLLMProvider(events=[TextChunk(text="Hi")])
 
-    await _consume(fake.stream(model="anthropic/claude", messages=[UserMessage(text="Hello")], tools=[], system_prompt=""))
+    await _consume(
+        fake.stream(
+            model="anthropic/claude",
+            messages=[UserMessage(text="Hello")],
+            tools=[],
+            system_prompt="",
+        )
+    )
 
     assert len(fake.invocations) == 1
     assert fake.invocations[0].model == "anthropic/claude"

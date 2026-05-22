@@ -4,7 +4,6 @@ import pytest
 
 from py_coding_agent.adapters.rule_provider import RuleProvider
 from py_coding_agent.domain.message import ToolResultMessage, UserMessage
-from py_coding_agent.domain.tool_call import ToolCall
 from py_coding_agent.domain.tool_call_id import ToolCallId
 from py_coding_agent.ports.llm_provider import StopEvent, TextChunk, ToolCallChunk
 
@@ -15,7 +14,8 @@ async def test_rule_provider_parses_read_command() -> None:
     provider = RuleProvider()
 
     events = [
-        event async for event in provider.stream(
+        event
+        async for event in provider.stream(
             model="rule",
             messages=[UserMessage(text="read:/etc/hosts")],
             tools=[],
@@ -37,7 +37,8 @@ async def test_rule_provider_parses_bash_command() -> None:
     provider = RuleProvider()
 
     events = [
-        event async for event in provider.stream(
+        event
+        async for event in provider.stream(
             model="rule",
             messages=[UserMessage(text="bash:pwd")],
             tools=[],
@@ -57,7 +58,8 @@ async def test_rule_provider_confirms_tool_results() -> None:
     tool_call_id = ToolCallId.from_string("550e8400-e29b-41d4-a716-446655440000")
 
     events = [
-        event async for event in provider.stream(
+        event
+        async for event in provider.stream(
             model="rule",
             messages=[
                 UserMessage(text="bash:pwd"),
@@ -84,7 +86,8 @@ async def test_rule_provider_echoes_plain_text() -> None:
     provider = RuleProvider()
 
     events = [
-        event async for event in provider.stream(
+        event
+        async for event in provider.stream(
             model="rule",
             messages=[UserMessage(text="Just a chat message")],
             tools=[],

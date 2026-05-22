@@ -15,9 +15,7 @@ class BashExecutor:
         """Run the command from the tool call and return stdout or stderr."""
         command = tool_call.arguments.get("command", "")
         if not isinstance(command, str):
-            return ToolExecutionResult(
-                content="Invalid command argument", is_error=True
-            )
+            return ToolExecutionResult(content="Invalid command argument", is_error=True)
 
         process = await asyncio.create_subprocess_shell(
             command,

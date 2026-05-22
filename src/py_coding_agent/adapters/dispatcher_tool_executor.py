@@ -14,7 +14,5 @@ class DispatcherToolExecutor(ToolExecutor):
         """Execute a tool call by dispatching to the appropriate executor."""
         executor = self._executors.get(tool_call.name)
         if executor is None:
-            return ToolExecutionResult(
-                content=f"Unknown tool: {tool_call.name}", is_error=True
-            )
+            return ToolExecutionResult(content=f"Unknown tool: {tool_call.name}", is_error=True)
         return await executor.execute(tool_call)

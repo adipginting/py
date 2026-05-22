@@ -21,9 +21,7 @@ from tests.unit.fakes.fake_tool_executor import FakeToolExecutor
 @pytest.mark.anyio
 async def test_turn_with_no_tool_calls_returns_single_assistant_message() -> None:
     """A simple prompt-response turn produces one assistant message and stops."""
-    llm = FakeLLMProvider(
-        events_per_call=[[TextChunk(text="Hello!"), StopEvent(reason="stop")]]
-    )
+    llm = FakeLLMProvider(events_per_call=[[TextChunk(text="Hello!"), StopEvent(reason="stop")]])
     executor = FakeToolExecutor()
     use_case = TurnLoopUseCase(llm_provider=llm, tool_executor=executor)
     state = AgentState()
@@ -42,9 +40,7 @@ async def test_turn_with_no_tool_calls_returns_single_assistant_message() -> Non
 async def test_turn_executes_tool_calls_and_reprompts() -> None:
     """When the assistant requests tools, they execute and the LLM is called again."""
     tool_call_id = ToolCallId.from_string("550e8400-e29b-41d4-a716-446655440000")
-    tool_call = ToolCall(
-        id=tool_call_id, name="read", arguments={"path": "/etc/hosts"}
-    )
+    tool_call = ToolCall(id=tool_call_id, name="read", arguments={"path": "/etc/hosts"})
 
     llm = FakeLLMProvider(
         events_per_call=[
@@ -94,9 +90,7 @@ async def test_turn_executes_multiple_tools_in_one_call() -> None:
             [TextChunk(text="Both done"), StopEvent(reason="stop")],
         ]
     )
-    executor = FakeToolExecutor(
-        results={"read": ToolExecutionResult(content="content")}
-    )
+    executor = FakeToolExecutor(results={"read": ToolExecutionResult(content="content")})
     use_case = TurnLoopUseCase(llm_provider=llm, tool_executor=executor)
     state = AgentState()
 
@@ -110,9 +104,7 @@ async def test_turn_executes_multiple_tools_in_one_call() -> None:
 @pytest.mark.anyio
 async def test_turn_forwards_tools_to_provider() -> None:
     """Available tool definitions are forwarded to every provider call."""
-    llm = FakeLLMProvider(
-        events_per_call=[[TextChunk(text="OK"), StopEvent(reason="stop")]]
-    )
+    llm = FakeLLMProvider(events_per_call=[[TextChunk(text="OK"), StopEvent(reason="stop")]])
     executor = FakeToolExecutor()
     use_case = TurnLoopUseCase(llm_provider=llm, tool_executor=executor)
     state = AgentState()

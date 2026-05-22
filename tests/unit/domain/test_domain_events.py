@@ -48,7 +48,9 @@ def test_appending_tool_result_emits_tool_result_appended_event() -> None:
     state = AgentState()
     tool_call_id = ToolCallId.from_string("550e8400-e29b-41d4-a716-446655440000")
     state.append_assistant_message(
-        AssistantMessage(text="", tool_calls=(ToolCall(id=tool_call_id, name="read", arguments={}),))
+        AssistantMessage(
+            text="", tool_calls=(ToolCall(id=tool_call_id, name="read", arguments={}),)
+        )
     )
     result = ToolResultMessage(tool_call_id=tool_call_id, content="done")
 

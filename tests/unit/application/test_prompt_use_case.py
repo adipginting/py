@@ -8,7 +8,7 @@ from py_coding_agent.domain.message import AssistantMessage, UserMessage
 from py_coding_agent.domain.tool_call import ToolCall
 from py_coding_agent.domain.tool_call_id import ToolCallId
 from py_coding_agent.domain.tool_definition import ToolDefinition
-from py_coding_agent.ports.llm_provider import StopEvent, TextChunk, ToolCallChunk
+from py_coding_agent.ports.llm_provider import StopEvent, TextChunk, ToolCallChunk, UsageEvent
 from tests.unit.fakes.fake_llm_provider import FakeLLMProvider
 
 
@@ -94,3 +94,45 @@ async def test_prompt_use_case_returns_events() -> None:
 
     event_types = [type(e).__name__ for e in result.events]
     assert "MessageAppended" in event_types
+
+
+@pytest.mark.anyio
+async def test_prompt_use_case_records_token_usage() -> None:
+    """UsageEvent from the stream is accumulated into AgentState."""
+    fake = FakeLLMProvider(
+        events=[
+            TextChunk(text="Hi"),
+            UsageEvent(input_tokens=10, output_tokens=2),
+            StopEvent(reason="stop"),
+        ]
+    )
+    use_case = PromptUseCase(llm_provider=fake)
+    state = AgentState()
+
+    result = await use_case.execute(state=state, text="Hello")
+
+    assert state.token_usage.input_tokens == 10
+    assert state.token_usage.output_tokens == 2
+    assert state.token_usage.total_tokens == 12
+    event_types = [type(e).__name__ for e in result.events]
+    assert "TokenUsageRecorded" in event_types
+
+
+@pytest.mark.anyio
+async def test_prompt_use_case_sums_multiple_usage_events() -> None:
+    """Multiple UsageEvent chunks are summed into a single TokenUsage."""
+    fake = FakeLLMProvider(
+        events=[
+            TextChunk(text="Hello"),
+            UsageEvent(input_tokens=5, output_tokens=1),
+            UsageEvent(input_tokens=3, output_tokens=1),
+            StopEvent(reason="stop"),
+        ]
+    )
+    use_case = PromptUseCase(llm_provider=fake)
+    state = AgentState()
+
+    await use_case.execute(state=state, text="Hello")
+
+    assert state.token_usage.input_tokens == 8
+    assert state.token_usage.output_tokens == 2

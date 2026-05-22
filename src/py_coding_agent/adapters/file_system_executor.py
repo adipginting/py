@@ -24,9 +24,7 @@ class FileSystemExecutor:
         if name == "write":
             return self._write(arguments)
 
-        return ToolExecutionResult(
-            content=f"Unknown tool: {name}", is_error=True
-        )
+        return ToolExecutionResult(content=f"Unknown tool: {name}", is_error=True)
 
     def _read(self, arguments: dict[str, object]) -> ToolExecutionResult:
         path = self._resolve(arguments.get("path", ""))
@@ -34,13 +32,9 @@ class FileSystemExecutor:
             content = path.read_text()
             return ToolExecutionResult(content=content)
         except FileNotFoundError:
-            return ToolExecutionResult(
-                content=f"File not found: {path}", is_error=True
-            )
+            return ToolExecutionResult(content=f"File not found: {path}", is_error=True)
         except PermissionError:
-            return ToolExecutionResult(
-                content=f"Permission denied: {path}", is_error=True
-            )
+            return ToolExecutionResult(content=f"Permission denied: {path}", is_error=True)
 
     def _write(self, arguments: dict[str, object]) -> ToolExecutionResult:
         path = self._resolve(arguments.get("path", ""))
@@ -50,9 +44,7 @@ class FileSystemExecutor:
             path.write_text(str(content))
             return ToolExecutionResult(content=f"Wrote {path}")
         except PermissionError:
-            return ToolExecutionResult(
-                content=f"Permission denied: {path}", is_error=True
-            )
+            return ToolExecutionResult(content=f"Permission denied: {path}", is_error=True)
 
     def _resolve(self, raw: object) -> Path:
         path = Path(str(raw))

@@ -1,4 +1,4 @@
-"""ToolCallId value object."""
+"""SessionId value object."""
 
 from __future__ import annotations
 
@@ -7,14 +7,11 @@ from uuid import uuid4
 
 
 @dataclass(frozen=True)
-class ToolCallId:
-    """Unique identifier for a tool call.
+class SessionId:
+    """Unique identifier for a session.
 
-    Immutable value object. Two ToolCallIds are equal if and only if
+    Immutable value object. Two SessionIds are equal if and only if
     their underlying string values are equal.
-
-    Accepts arbitrary strings to accommodate provider-specific identifiers
-    (e.g. OpenAI's "call_abc123").
     """
 
     value: str
@@ -23,6 +20,6 @@ class ToolCallId:
         object.__setattr__(self, "value", value if value is not None else str(uuid4()))
 
     @classmethod
-    def from_string(cls, raw: str) -> ToolCallId:
-        """Create a ToolCallId from a raw string."""
+    def from_string(cls, raw: str) -> SessionId:
+        """Create a SessionId from a raw string."""
         return cls(raw)
